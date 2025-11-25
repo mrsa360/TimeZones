@@ -2,187 +2,300 @@
  * @name Timezones
  * @author mrsa360
  * @description Allows you to display other Users' local times.
- * @version 1.0.2
+ * @version 1.0.3
  * @source https://github.com/mrsa360/TimeZones.git
- * @updateurl https://github.com/mrsa360/TimeZones/blob/main/Timezones.plugin.js
+ * @updateurl https://raw.githubusercontent.com/mrsa360/TimeZones/main/Timezones.plugin.js
  */
 
-const { Data, React, DOM, Webpack, ContextMenu, UI, Components, Patcher } = new BdApi('Timezones');
+/* ### CONFIG START ### */
+const config = {
+  "info": {
+    "name": "Timezones",
+    "version": "1.4.3",
+    "description": "Displays users' local time inside their profile with improved theme support."
+  },
+  "changelog": [
+    {
+      "type": "fixed",
+      "title": "Improvements",
+      "items": [
+        "Improved compatibility for light and dark themes.",
+        "Updated text colors to follow Discord's theme variables.",
+        "Ensured the badge uses Discord's font consistently.",
+        "Badge background is no longer transparent."
+      ]
+    }
+  ]
+};
+/* ### CONFIG END ### */
+
+
+const { Data, React, DOM, Webpack, ContextMenu, UI, Components, Patcher } = new BdApi("Timezones");
 
 const baseConfig = {
     info: {
         name: "Timezones",
-        authors: [
-            {
-                name: "mrsa360",
-            },
-        ],
+        authors: [{ name: "mrsa360" }],
         github_raw: "https://raw.githubusercontent.com/mrsa360/TimeZones/main/Timezones.plugin.js",
-        version: "1.0.2",
-        description: "Allows you to display other Users' local times.",
+        version: "1.0.3",
+        description: "Allows you to display other Users' local times."
     },
     defaultConfig: [
         { type: "switch", id: "twentyFourHours", name: "24 Hour Time", value: false },
-        { type: "switch", id: "showInMessage", name: "Show local timestamp next to message", value: true },
-        { type: "switch", id: "showOffset", name: "Show localized GMT format (e.g., GMT-8)", value: false },
-    ],
+        { type: "switch", id: "showInMessage", name: "Show local timestamp next to messages", value: true },
+        { type: "switch", id: "showOffset", name: "Show GMT offset", value: false }
+    ]
 };
 
-const DataStore = new Proxy({}, {
-    get: (_, key) => {
-        if (key === 'settings') {
-            const savedSettings = Data.load(key) || {};
-            return baseConfig.defaultConfig.reduce((acc, setting) => {
-                acc[setting.id] = savedSettings[setting.id] ?? setting.value;
-                return acc;
-            }, {});
+const DataStore = new Proxy(
+    {},
+    {
+        get(_, key) {
+            if (key === "settings") {
+                const saved = Data.load("settings") || {};
+                return baseConfig.defaultConfig.reduce((out, s) => {
+                    out[s.id] = saved[s.id] ?? s.value;
+                    return out;
+                }, {});
+            }
+            return Data.load(key);
+        },
+        set(_, key, value) {
+            Data.save(key, value);
+            return true;
+        },
+        deleteProperty(_, key) {
+            Data.delete(key);
+            return true;
         }
-        return Data.load(key);
-    },
-    set: (_, key, value) => { Data.save(key, value); return true; },
-    deleteProperty: (_, key) => { Data.delete(key); return true; },
-});
+    }
+);
 
 function loadDefaults() {
-    if (!Data.load('settings')) {
-        DataStore.settings = baseConfig.defaultConfig.reduce((acc, setting) => {
-            acc[setting.id] = setting.value;
-            return acc;
+    if (!Data.load("settings")) {
+        DataStore.settings = baseConfig.defaultConfig.reduce((o, s) => {
+            o[s.id] = s.value;
+            return o;
         }, {});
     }
 }
 
-const config = { ...baseConfig, defaultConfig: baseConfig.defaultConfig.map(s => ({ ...s, value: DataStore.settings[s.id] })) };
-
-// Updated CSS for rounded background and badge appearance
 const Styles = `
-.timezone { 
-    margin-left: 0.5rem; 
-    font-size: 0.75rem; 
-    line-height: 1.375rem; 
-    color: var(--text-muted); 
-    vertical-align: baseline; 
-    display: inline-block; 
-    height: 1.25rem; 
-    cursor: default; 
-    font-weight: 500; 
-    padding: 0.25rem 0.5rem; 
-    border-radius: 12px; 
-    background-color: var(--background-secondary, #2f3136); 
-}
-[class*="compact"] .timezone { display: inline; }
-
-.timezone-margin-top { margin-top: 0.5rem; }
-
-.timezone-banner-container { position: relative; }
-
-.timezone-badge { 
-    position: absolute; 
-    top: 10px; 
-    left: 10px; 
-    background: var(--profile-body-background-color, var(--background-secondary, #2f3136)); 
-    border-radius: 12px; 
-    padding: 0.25rem 0.5rem; 
-    font-size: 0.75rem; 
-    color: var(--text-normal); 
+.timezone {
+    margin-left: 6px;
+    padding: 2px 6px;
+    font-size: 12px;
+    background-color: var(--background-tertiary);
+    border-radius: 6px;
     font-weight: 500;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    color: var(--text-muted);
+}
+
+.timezone-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: var(--background-tertiary);
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-normal);
+    pointer-events: none;
 }
 `;
 
-const Markdown = Webpack.getModule((m) => m?.rules && m?.defaultProps?.parser);
-const SearchableSelect = Webpack.getByStrings('formatOption','options','hideTags',{searchExports:true});
-const ProfileBanner = Webpack.getByStrings('"canUsePremiumProfileCustomization"', { defaultExport: false });
-const MessageHeader = Webpack.getModule(Webpack.Filters.byStrings("userOverride", "withMentionPrefix"), { defaultExport: false });
 const Tooltip = Components.Tooltip;
+const Markdown = Webpack.getModule(m => m?.rules && m?.defaultProps?.parser);
+const SearchableSelect = Webpack.getModule(m => m?.toString?.().includes("formatOption"));
+const ProfileBanner = Webpack.getModule(m => m?.Z?.toString?.().includes("banner"));
+const MessageHeader = Webpack.getModule(m => m?.Z?.toString?.().includes("getMessageAuthor"));
 const i18n = Webpack.getByKeys("getLocale");
 
 const TimezonesPanel = () => {
-    const [settings, setSettings] = React.useState({ ...DataStore.settings });
-    const handleSettingChange = (id, value) => {
-        setSettings(prev => { const newS = {...prev, [id]: value}; DataStore.settings = newS; return newS; });
-    };
-    return UI.buildSettingsPanel({ settings: config.defaultConfig.map(s => ({ ...s, value: settings[s.id] })), onChange: (_, id, value) => handleSettingChange(id, value) });
+    const [settings, set] = React.useState({ ...DataStore.settings });
+
+    return UI.buildSettingsPanel({
+        settings: baseConfig.defaultConfig.map(s => ({ ...s, value: settings[s.id] })),
+        onChange: (_, id, value) => {
+            const newS = { ...settings, [id]: value };
+            DataStore.settings = newS;
+            set(newS);
+        }
+    });
 };
 
 class Timezones {
-    constructor() { loadDefaults(); }
+    constructor() {
+        loadDefaults();
+    }
 
     start() {
-        DOM.addStyle("Timezones-Styles", Styles);
+        DOM.addStyle("TZ-Styles", Styles);
+
         ContextMenu.patch("user-context", this.userContextPatch);
 
         Patcher.after(ProfileBanner, "Z", (_, [props], ret) => {
-            if (!this.hasTimezone(props.user.id)) return;
-            ret.props.children = React.createElement(Tooltip, {
-                text: this.getTime(props.user.id, Date.now(), { weekday:"long", year:"numeric", month:"long", day:"numeric", hour:"numeric", minute:"numeric" }) + ` (${DataStore[props.user.id]})`,
-                children: (p) => React.createElement("div", {...p, className:"timezone-badge"}, this.getTime(props.user.id, Date.now(), { hour:"numeric", minute:"numeric" }))
-            });
+            const id = props.user.id;
+            if (!this.hasTimezone(id)) return ret;
+
+            const shortT = this.getTime(id, Date.now(), { hour: "numeric", minute: "numeric" });
+
+            const badge = React.createElement(
+                Tooltip,
+                {
+                    text: this.getTime(id, Date.now(), {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "numeric"
+                    }) + ` (${DataStore[id]})`
+                },
+                p => React.createElement("div", { ...p, className: "timezone-badge" }, shortT)
+            );
+
+            ret.props.children.push(badge);
+            return ret;
         });
 
         Patcher.after(MessageHeader, "Z", (_, [props], ret) => {
-            if (props.isRepliedMessage || !DataStore.settings.showInMessage) return;
-            if (!this.hasTimezone(props.message.author.id)) return;
+            if (!DataStore.settings.showInMessage) return ret;
+            if (!props.message?.author?.id) return ret;
+
+            const id = props.message.author.id;
+            if (!this.hasTimezone(id)) return ret;
+
+            const shortT = this.getTime(id, props.message.timestamp, { hour: "numeric", minute: "numeric" });
 
             ret.props.children.push(
-                React.createElement(Tooltip, {
-                    text: this.getTime(props.message.author.id, props.message.timestamp, { weekday:"long", year:"numeric", month:"long", day:"numeric", hour:"numeric", minute:"numeric" }) + ` (${DataStore[props.message.author.id]})`,
-                    children: (p) => React.createElement("span", {...p, className:"timezone"}, this.getTime(props.message.author.id, props.message.timestamp, { hour:"numeric", minute:"numeric" }))
-                })
+                React.createElement(
+                    Tooltip,
+                    {
+                        text: this.getTime(id, props.message.timestamp, {
+                            weekday: "long",
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                            hour: "numeric",
+                            minute: "numeric"
+                        }) + ` (${DataStore[id]})`
+                    },
+                    p => React.createElement("span", { ...p, className: "timezone" }, shortT)
+                )
             );
+
+            return ret;
         });
     }
 
-    userContextPatch = (ret, props) => {
-        const isDM = !Array.isArray(ret.props.children[0].props.children);
-        (isDM ? ret.props.children : ret.props.children[0].props.children).push([
-            ContextMenu.buildItem({ type:"separator" }),
-            ContextMenu.buildItem({ type:"submenu", label:"Timezones", children:[
-                DataStore[props.user.id] && ContextMenu.buildItem({ type:"text", disabled:true, label:DataStore[props.user.id] }),
-                ContextMenu.buildItem({ label:DataStore[props.user.id]?"Change Timezone":"Set Timezone", action:()=>this.setTimezone(props.user.id, props.user) }),
-                ContextMenu.buildItem({ label:"Remove Timezone", danger:true, disabled:!this.hasTimezone(props.user.id), action:()=>this.removeTimezone(props.user.id, props.user) })
-            ].filter(x=>x) }),
-        ]);
+    userContextPatch = (menu, props) => {
+        const userId = props.user?.id;
+        if (!userId) return;
+
+        const items = menu.props.children;
+        items.push(
+            ContextMenu.buildItem({ type: "separator" }),
+            ContextMenu.buildItem({
+                type: "submenu",
+                label: "Timezones",
+                children: [
+                    this.hasTimezone(userId) &&
+                        ContextMenu.buildItem({
+                            type: "text",
+                            disabled: true,
+                            label: DataStore[userId]
+                        }),
+                    ContextMenu.buildItem({
+                        label: this.hasTimezone(userId) ? "Change Timezone" : "Set Timezone",
+                        action: () => this.setTimezone(userId, props.user)
+                    }),
+                    ContextMenu.buildItem({
+                        label: "Remove Timezone",
+                        danger: true,
+                        disabled: !this.hasTimezone(userId),
+                        action: () => this.removeTimezone(userId, props.user)
+                    })
+                ].filter(Boolean)
+            })
+        );
     };
 
-    hasTimezone(id) { return !!DataStore[id] && !Array.isArray(DataStore[id]); }
+    hasTimezone(id) {
+        return typeof DataStore[id] === "string";
+    }
 
     setTimezone(id, user) {
-        let outvalue = null;
+        let selected = DataStore[id] || null;
+
         const options = Intl.supportedValuesOf("timeZone").map(tz => {
-            const offset = new Intl.DateTimeFormat(undefined,{timeZone:tz,timeZoneName:"short"}).formatToParts(new Date()).find(p=>p.type==="timeZoneName").value;
+            const offset = new Intl.DateTimeFormat(undefined, {
+                timeZone: tz,
+                timeZoneName: "short"
+            })
+                .formatToParts(new Date())
+                .find(p => p.type === "timeZoneName").value;
+
             return { label: `${tz} (${offset})`, value: tz };
         });
 
-        const SelectWrapper = () => {
-            const [currentValue, setCurrentValue] = React.useState(DataStore[id] || null);
+        const Selector = () => {
+            const [value, set] = React.useState(selected);
+
             return React.createElement(SearchableSelect, {
                 options,
-                value: options.find(o=>o.value===currentValue),
-                placeholder:"Select a Timezone",
-                maxVisibleItems:5,
-                closeOnSelect:true,
-                onChange:value=>{ setCurrentValue(value); outvalue = value; }
+                closeOnSelect: true,
+                value: options.find(o => o.value === value),
+                onChange: v => {
+                    selected = v.value;
+                    set(v.value);
+                }
             });
         };
 
         UI.showConfirmationModal(
             `Set Timezone for ${user.username}`,
-            [React.createElement(Markdown,null,"Please select a timezone."), React.createElement(SelectWrapper, {})],
-            { confirmText:"Set", onConfirm:()=>{ DataStore[id]=outvalue; UI.showToast(`Timezone set to ${outvalue} for ${user.username}`,{type:"success"}); } }
+            [
+                React.createElement(Markdown, null, "Select the user's timezone:"),
+                React.createElement(Selector)
+            ],
+            {
+                confirmText: "Save",
+                onConfirm: () => {
+                    DataStore[id] = selected;
+                    UI.showToast(`Timezone saved for ${user.username}`);
+                }
+            }
         );
     }
 
-    removeTimezone(id, user) { delete DataStore[id]; UI.showToast(`Timezone removed for ${user.username}`,{type:"success"}); }
-
-    getTime(id, time, props) {
-        const tz = DataStore[id]; if(!tz) return null;
-        return new Intl.DateTimeFormat(i18n?.getLocale?.()||"en-US", { hourCycle:DataStore.settings.twentyFourHours?"h23":"h12", timeZone:tz, timeZoneName:DataStore.settings.showOffset?"shortOffset":undefined, ...props }).format(new Date(time));
+    removeTimezone(id, user) {
+        delete DataStore[id];
+        UI.showToast(`Timezone removed for ${user.username}`);
     }
 
-    stop() { Patcher.unpatchAll(); ContextMenu.unpatch("user-context", this.userContextPatch); DOM.removeStyle("Timezones-Styles"); }
+    getTime(id, timestamp, props) {
+        const tz = DataStore[id];
+        if (!tz) return null;
 
-    getSettingsPanel() { return React.createElement(TimezonesPanel); }
+        return new Intl.DateTimeFormat(i18n.getLocale(), {
+            hourCycle: DataStore.settings.twentyFourHours ? "h23" : "h12",
+            timeZone: tz,
+            timeZoneName: DataStore.settings.showOffset ? "shortOffset" : undefined,
+            ...props
+        }).format(new Date(timestamp));
+    }
+
+    stop() {
+        Patcher.unpatchAll();
+        ContextMenu.unpatch("user-context", this.userContextPatch);
+        DOM.removeStyle("TZ-Styles");
+    }
+
+    getSettingsPanel() {
+        return React.createElement(TimezonesPanel);
+    }
 }
 
 module.exports = Timezones;
