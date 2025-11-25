@@ -2,7 +2,7 @@
  * @name Timezones
  * @author mrsa360
  * @description Allows you to display other Users' local times.
- * @version 0.1
+ * @version 1.0.2
  * @source https://github.com/mrsa360/TimeZones.git
  * @updateurl https://github.com/mrsa360/TimeZones/blob/main/Timezones.plugin.js
  */
@@ -18,7 +18,7 @@ const baseConfig = {
             },
         ],
         github_raw: "https://raw.githubusercontent.com/mrsa360/TimeZones/main/Timezones.plugin.js",
-        version: "0.1",
+        version: "1.0.2",
         description: "Allows you to display other Users' local times.",
     },
     defaultConfig: [
@@ -54,12 +54,40 @@ function loadDefaults() {
 
 const config = { ...baseConfig, defaultConfig: baseConfig.defaultConfig.map(s => ({ ...s, value: DataStore.settings[s.id] })) };
 
+// Updated CSS for rounded background and badge appearance
 const Styles = `
-.timezone { margin-left: 0.5rem; font-size: 0.75rem; line-height: 1.375rem; color: var(--text-muted); vertical-align: baseline; display: inline-block; height: 1.25rem; cursor: default; font-weight: 500; }
+.timezone { 
+    margin-left: 0.5rem; 
+    font-size: 0.75rem; 
+    line-height: 1.375rem; 
+    color: var(--text-muted); 
+    vertical-align: baseline; 
+    display: inline-block; 
+    height: 1.25rem; 
+    cursor: default; 
+    font-weight: 500; 
+    padding: 0.25rem 0.5rem; 
+    border-radius: 12px; 
+    background-color: var(--background-secondary, #2f3136); 
+}
 [class*="compact"] .timezone { display: inline; }
+
 .timezone-margin-top { margin-top: 0.5rem; }
+
 .timezone-banner-container { position: relative; }
-.timezone-badge { position: absolute; top: 10px; left: 10px; background: var(--profile-body-background-color, var(--background-primary)); border-radius: 4px; padding: 0.25rem 0.5rem; font-size: 0.75rem; color: var(--text-normal); }
+
+.timezone-badge { 
+    position: absolute; 
+    top: 10px; 
+    left: 10px; 
+    background: var(--profile-body-background-color, var(--background-secondary, #2f3136)); 
+    border-radius: 12px; 
+    padding: 0.25rem 0.5rem; 
+    font-size: 0.75rem; 
+    color: var(--text-normal); 
+    font-weight: 500;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
 `;
 
 const Markdown = Webpack.getModule((m) => m?.rules && m?.defaultProps?.parser);
