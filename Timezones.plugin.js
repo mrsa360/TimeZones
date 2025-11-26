@@ -2,7 +2,7 @@
  * @name Timezones
  * @author mrsa360
  * @description Allows you to display other Users' local times.
- * @version 0.1
+ * @version 1.0.9
  * @source https://github.com/mrsa360/TimeZones.git
  * @updateurl https://github.com/mrsa360/TimeZones/blob/main/Timezones.plugin.js
  */
