@@ -62,40 +62,39 @@ const Styles = `
     margin-left: 6px;
     padding: 2px 6px;
     font-size: 12px;
-    background-color: var(--background-tertiary);
+    background: var(--background-secondary);
     border-radius: 6px;
     font-weight: 500;
     color: var(--text-muted);
+    opacity: 0;
+    animation: tzFadeIn 0.25s ease forwards;
 }
 
 .timezone-badge {
     position: absolute;
     top: 12px;
     left: 12px;
-
     padding: 4px 8px;
-    border-radius: 4px;
-
-    background-color: var(--background-secondary);
-    color: var(--text-normal);
-
-    font-family: var(--font-primary);
+    border-radius: 6px;
     font-size: 12px;
     font-weight: 600;
-    line-height: 16px;
-
-    backdrop-filter: blur(6px);
-
+    background: var(--background-secondary);
+    color: var(--text-normal);
+    box-shadow: var(--elevation-low);
     opacity: 0;
-    transform: translateY(-4px);
-    animation: tzBadgeIn 0.25s ease-out forwards;
+    animation: tzBadgeIn 0.25s ease forwards;
+    pointer-events: none;
+    user-select: none;
+}
+
+@keyframes tzFadeIn {
+    from { opacity: 0; transform: translateY(-2px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes tzBadgeIn {
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
 }
 `;
 
