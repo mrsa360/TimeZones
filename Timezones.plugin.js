@@ -72,15 +72,22 @@ const Styles = `
     position: absolute;
     top: 10px;
     left: 10px;
+
     background-color: var(--background-tertiary);
+
     padding: 4px 8px;
     border-radius: 8px;
+
+    font-family: var(--font-primary);
     font-size: 12px;
     font-weight: 600;
+
     color: var(--text-normal);
+
     pointer-events: none;
+    user-select: none;
 }
-`;
+
 
 const Tooltip = Components.Tooltip;
 const Markdown = Webpack.getModule(m => m?.rules && m?.defaultProps?.parser);
