@@ -2,7 +2,7 @@
  * @name Timezones
  * @author mrsa360
  * @description Allows you to display other Users' local times.
- * @version 1.0.3
+ * @version 1.0.4
  * @source https://github.com/mrsa360/TimeZones.git
  * @updateurl https://raw.githubusercontent.com/mrsa360/TimeZones/main/Timezones.plugin.js
  */
@@ -14,7 +14,7 @@ const baseConfig = {
         name: "Timezones",
         authors: [{ name: "mrsa360" }],
         github_raw: "https://raw.githubusercontent.com/mrsa360/TimeZones/main/Timezones.plugin.js",
-        version: "1.0.3",
+        version: "1.0.4",
         description: "Allows you to display other Users' local times."
     },
     defaultConfig: [
@@ -70,24 +70,34 @@ const Styles = `
 
 .timezone-badge {
     position: absolute;
-    top: 10px;
-    left: 10px;
-
-    background-color: var(--background-tertiary);
+    top: 12px;
+    left: 12px;
 
     padding: 4px 8px;
-    border-radius: 8px;
+    border-radius: 4px;
+
+    background-color: var(--background-secondary);
+    color: var(--text-normal);
 
     font-family: var(--font-primary);
     font-size: 12px;
     font-weight: 600;
+    line-height: 16px;
 
-    color: var(--text-normal);
+    backdrop-filter: blur(6px);
 
-    pointer-events: none;
-    user-select: none;
+    opacity: 0;
+    transform: translateY(-4px);
+    animation: tzBadgeIn 0.25s ease-out forwards;
 }
 
+@keyframes tzBadgeIn {
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+`;
 
 const Tooltip = Components.Tooltip;
 const Markdown = Webpack.getModule(m => m?.rules && m?.defaultProps?.parser);
@@ -136,8 +146,7 @@ class Timezones {
                                 day: "numeric",
                                 hour: "numeric",
                                 minute: "numeric"
-                            }) +
-                            ` (${DataStore[id]})`
+                            }) + ` (${DataStore[id]})`
                     },
                     p => React.createElement("div", { ...p, className: "timezone-badge" }, short)
                 )
@@ -167,8 +176,7 @@ class Timezones {
                                 day: "numeric",
                                 hour: "numeric",
                                 minute: "numeric"
-                            }) +
-                            ` (${DataStore[id]})`
+                            }) + ` (${DataStore[id]})`
                     },
                     p => React.createElement("span", { ...p, className: "timezone" }, short)
                 )
